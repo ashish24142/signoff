@@ -1,0 +1,18 @@
+# Minimal example suite. Real suites: one case per document/attribute.
+cases:
+  - id: facility-amount
+    prompt: |
+      From the following credit agreement excerpt, extract the total facility amount.
+      Reply with only the amount.
+
+      "...the Lenders agree to make available a revolving credit facility in an
+      aggregate principal amount of $250,000,000 (the 'Facility')..."
+    expected: "$250,000,000"
+
+  - id: governing-law
+    prompt: |
+      From the following excerpt, extract the governing law state. Reply with only the state name.
+
+      "...this Agreement shall be governed by, and construed in accordance with,
+      the laws of the State of New York..."
+    expected: "New York"

@@ -1,0 +1,18 @@
+[project]
+name = "signoff"
+version = "0.1.0"
+description = "Statistical sign-off for the model swap: N-run, nondeterminism-aware A/B equivalence with an audit-ready report."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+dependencies = ["pyyaml", "openai", "anthropic"]
+
+[project.scripts]
+signoff = "signoff.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["signoff*"]
