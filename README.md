@@ -1,10 +1,10 @@
 # signoff
 
-**Statistical sign-off for the model swap.** N-run, nondeterminism-aware A/B equivalence testing for LLM migrations — with an audit-ready report.
+**Statistical sign-off for the model swap.** N-run, nondeterminism-aware A/B equivalence testing for LLM migrations, with an audit-ready report.
 
-Model deprecations force migrations on someone else's schedule. "We eyeballed ten outputs" is not evidence a regulated enterprise can take to a risk committee. `signoff` runs your real prompt suite on the old and new model N times each, measures per-case flip rates (nondeterminism), scores answers through layered matching (exact → normalized → numeric → LLM-judge), and applies a paired sign test before declaring the swap safe.
+Model deprecations force migrations on someone else's schedule. "We eyeballed ten outputs" is not evidence a regulated enterprise can take to a risk committee. `signoff` runs your real prompt suite on the old and new model N times each, measures per-case flip rates (nondeterminism), scores answers through layered matching (exact, normalized, numeric, then LLM-judge), and applies a paired sign test before declaring the swap safe.
 
-Vendor-neutral by design: it judges an OpenAI→Anthropic migration with exactly the same rigor as the reverse.
+Vendor-neutral by design: it judges an OpenAI to Anthropic migration with exactly the same rigor as the reverse.
 
 ## Install
 
@@ -34,7 +34,7 @@ accuracy: A=93.8% B=95.8% p=0.512
 verdict: PASS   report: report.html / report.json
 ```
 
-**Verdict logic:** with ground truth (`expected` per case), FAIL only when model B is less accurate *and* the regression is statistically significant (exact sign test on discordant pairs, p ≤ 0.05). Without ground truth, ≥90% majority-answer agreement passes; below that, REVIEW.
+**Verdict logic:** with ground truth (`expected` per case), FAIL only when model B is less accurate *and* the regression is statistically significant (exact sign test on discordant pairs, p <= 0.05). Without ground truth, 90%+ majority-answer agreement passes; below that, REVIEW.
 
 ## Suite format
 
@@ -51,9 +51,9 @@ Single-run comparisons confuse nondeterminism with regression. A prompt that fli
 
 ## Roadmap
 
-- `signoff stability` — flip-rate matrix and prompt-line blame for a single model
+- `signoff stability`: flip-rate matrix and prompt-line blame for a single model
 - Semantic match layer (embeddings) between numeric and judge
-- Governance evidence annex — mapping results to ISO/IEC 42001 change control, NIST AI RMF MEASURE, EU AI Act Annex IV, RBI FREE-AI
+- Governance evidence annex: mapping results to ISO/IEC 42001 change control, NIST AI RMF MEASURE, EU AI Act Annex IV
 - Adapters: Bedrock, Azure OpenAI, Gemini
 - Equivalence bands (TOST) as an alternative to the sign test
 

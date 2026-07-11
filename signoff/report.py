@@ -10,7 +10,7 @@ table{{border-collapse:collapse;width:100%;margin-top:18px;font-size:14px}}
 th,td{{border:1px solid #d7dde7;padding:7px 10px;text-align:left;vertical-align:top}}
 th{{background:#f0f3f8}} td.no{{background:#fdecea}} .mut{{color:#6b7787;font-size:13px}}
 </style>
-<h1>signoff &mdash; migration report <span class="verdict {verdict}">{verdict}</span></h1>
+<h1>signoff migration report <span class="verdict {verdict}">{verdict}</span></h1>
 <p class="mut">model A: <b>{model_a}</b> &nbsp;vs&nbsp; model B: <b>{model_b}</b> &nbsp;&middot;&nbsp; {cases} cases &times; {runs} runs each</p>
 <p>{summary_line}</p>
 <table>
