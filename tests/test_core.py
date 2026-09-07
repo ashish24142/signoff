@@ -34,6 +34,35 @@ def test_run_suite_end_to_end():
     assert s["accuracy_a"] == 1.0 and s["accuracy_b"] == 0.0
     assert s["verdict"] == "PASS"  # 1 discordant pair -> p=1.0, not significant
 
+def test_stability_and_ablation():
+    from signoff.core import stability_suite, stability_summary
+    calls = {"n": 0}
+    def flaky(spec, prompt, temperature):
+        calls["n"] += 1
+        if "Reply with only" not in prompt:   # rules section ablated: fully unstable
+            return "X" if calls["n"] % 2 else "Y"
+        return "A" if calls["n"] % 5 else "B"    # rules present: flips 1 in 5
+    cases = [{"id": "c1", "sections": [
+        {"name": "role", "text": "You extract dates."},
+        {"name": "rules", "text": "Reply with only the date."}]}]
+    results = stability_suite(cases, "m:x", runs=10, ablate=True, caller=flaky)
+    r = results[0]
+    assert r["flip_rate"] == 0.2 and r["distinct"] == 2
+    assert set(r["ablation_flip_rates"]) == {"role", "rules"}
+    assert r["ablation_flip_rates"]["rules"] == 0.5  # removing rules doubles instability
+    s = stability_summary(results, 10, gate=0.1)
+    assert s["verdict"] == "FAIL" and s["worst_flip"] == 0.2
+    assert stability_summary(results, 10, gate=0.3)["verdict"] == "PASS"
+
+def test_stability_report_renders():
+    from signoff.core import stability_suite, stability_summary
+    from signoff.report import build_stability_html
+    def steady(spec, prompt, temperature):
+        return "same"
+    results = stability_suite([{"prompt": "q"}], "m:x", runs=3, caller=steady)
+    html = build_stability_html(stability_summary(results, 3), results, "m:x")
+    assert "stability report" in html and "REPORT" in html
+
 def test_report_renders():
     from signoff.report import build_html
     def fake(spec, prompt, temperature):

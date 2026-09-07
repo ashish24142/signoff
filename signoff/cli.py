@@ -19,15 +19,41 @@ def main(argv=None):
     r.add_argument("--temperature", type=float, default=0.0)
     r.add_argument("--judge", help="provider:model for the LLM-judge match layer")
     r.add_argument("--out", default="signoff-report.html")
+
+    st = sub.add_parser("stability", help="N-run flakiness measurement for a single model")
+    st.add_argument("--suite", required=True,
+                    help="YAML suite: cases with 'prompt' or 'sections: [{name, text}]'")
+    st.add_argument("--model", required=True, help="provider:model, e.g. openai:gpt-4o")
+    st.add_argument("--runs", type=int, default=10)
+    st.add_argument("--temperature", type=float, default=0.0)
+    st.add_argument("--ablate", action="store_true",
+                    help="leave-one-out section ablation to attribute flips (needs 'sections')")
+    st.add_argument("--gate", type=float,
+                    help="max acceptable per-case flip rate; exit 1 if exceeded (CI gate)")
+    st.add_argument("--out", default="stability-report.html")
     args = p.parse_args(argv)
 
     suite = yaml.safe_load(Path(args.suite).read_text(encoding="utf-8"))
+    out = Path(args.out)
+
+    if args.cmd == "stability":
+        results = core.stability_suite(suite["cases"], args.model, runs=args.runs,
+                                       temperature=args.temperature, ablate=args.ablate)
+        summary = core.stability_summary(results, args.runs, gate=args.gate)
+        out.write_text(report.build_stability_html(summary, results, args.model), encoding="utf-8")
+        out.with_suffix(".json").write_text(
+            json.dumps({"summary": summary, "results": results}, indent=2), encoding="utf-8")
+        print(f"cases={summary['cases']} runs={summary['runs']} "
+              f"mean_flip={summary['mean_flip']:.1%} worst_flip={summary['worst_flip']:.1%} "
+              f"unstable_cases={summary['unstable_cases']}")
+        print(f"verdict: {summary['verdict']}   report: {out} / {out.with_suffix('.json')}")
+        return 1 if summary["verdict"] == "FAIL" else 0
+
     judge = core.llm_judge(args.judge) if args.judge else None
     results = core.run_suite(suite["cases"], args.model_a, args.model_b,
                              runs=args.runs, temperature=args.temperature, judge=judge)
     summary = core.summarize(results, args.runs)
 
-    out = Path(args.out)
     out.write_text(report.build_html(summary, results, args.model_a, args.model_b), encoding="utf-8")
     out.with_suffix(".json").write_text(
         json.dumps({"summary": summary, "results": results}, indent=2), encoding="utf-8")

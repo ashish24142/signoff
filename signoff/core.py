@@ -138,3 +138,49 @@ def summarize(results, runs):
         # ponytail: no ground truth -> agreement heuristic; equivalence bands later
         s["verdict"] = "PASS" if s["agreement"] >= 0.9 else "REVIEW"
     return s
+
+# ---------- stability (single-model flakiness) ----------
+
+def _join_sections(sections, skip=None):
+    return "\n".join(s["text"] for s in sections if s.get("name") != skip)
+
+def stability_suite(cases, model, runs=10, temperature=0.0, ablate=False, caller=call):
+    """Flakiness measurement for ONE model.
+
+    cases: [{'id'?, 'prompt'? or 'sections': [{'name','text'}], ...}]
+    Returns per-case rows: majority answer, flip rate, distinct-answer count,
+    and (with ablate=True and sectioned prompts) per-section flip rates when
+    that section is removed -- the blame signal."""
+    results = []
+    for case in cases:
+        sections = case.get("sections")
+        prompt = case.get("prompt") or _join_sections(sections)
+        row = {"id": str(case.get("id") or prompt[:40])}
+        answers = [caller(model, prompt, temperature) for _ in range(runs)]
+        row["majority"] = majority(answers)
+        row["flip_rate"] = flip_rate(answers)
+        row["distinct"] = len(set(answers))
+        if ablate and sections:
+            # ponytail: leave-one-out ablation only; section interactions when someone needs them
+            blame = {}
+            for sec in sections:
+                a = [caller(model, _join_sections(sections, skip=sec["name"]), temperature)
+                     for _ in range(runs)]
+                blame[sec["name"]] = flip_rate(a)
+            row["ablation_flip_rates"] = blame
+        results.append(row)
+    return results
+
+def stability_summary(results, runs, gate=None):
+    """gate: max acceptable per-case flip rate; sets PASS/FAIL for CI use."""
+    n = len(results)
+    s = {"cases": n, "runs": runs,
+         "mean_flip": sum(r["flip_rate"] for r in results) / n,
+         "worst_flip": max(r["flip_rate"] for r in results),
+         "unstable_cases": sum(r["flip_rate"] > 0 for r in results)}
+    if gate is not None:
+        s["gate"] = gate
+        s["verdict"] = "PASS" if s["worst_flip"] <= gate else "FAIL"
+    else:
+        s["verdict"] = "REPORT"
+    return s

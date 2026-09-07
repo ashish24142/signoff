@@ -51,7 +51,6 @@ Single-run comparisons confuse nondeterminism with regression. A prompt that fli
 
 ## Roadmap
 
-- `signoff stability`: flip-rate matrix and prompt-line blame for a single model
 - Semantic match layer (embeddings) between numeric and judge
 - Governance evidence annex: mapping results to ISO/IEC 42001 change control, NIST AI RMF MEASURE, EU AI Act Annex IV
 - Adapters: Bedrock, Azure OpenAI, Gemini
