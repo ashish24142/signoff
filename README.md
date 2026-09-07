@@ -49,6 +49,30 @@ cases:
 
 Single-run comparisons confuse nondeterminism with regression. A prompt that flips answers 30% of the time will "regress" or "improve" by luck. `signoff` reports the flip rate per case per model, so instability is visible before it's misattributed to the migration.
 
+## Prompt stability (flakiness) mode
+
+Measure a single model's flakiness, and find which prompt section causes it:
+
+```bash
+signoff stability --suite suite.yaml --model openai:gpt-4o --runs 10 --ablate --gate 0.1
+```
+
+Give cases `sections` instead of `prompt` to enable ablation:
+
+```yaml
+cases:
+  - id: governing-law
+    sections:
+      - name: role
+        text: "You extract facts from legal documents."
+      - name: task
+        text: "Extract the governing law state from the excerpt below."
+      - name: format
+        text: "Reply with only the state name."
+```
+
+For each case you get the flip rate (fraction of N runs disagreeing with the majority answer), and with `--ablate`, the flip rate with each section removed: the section whose removal makes instability jump is the section doing the stabilizing work, and the one whose removal cures a flip is the section causing it. `--gate` turns it into a CI check: exit 1 if any case flips more than the threshold.
+
 ## Roadmap
 
 - Semantic match layer (embeddings) between numeric and judge
