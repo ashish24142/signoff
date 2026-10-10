@@ -54,6 +54,23 @@ def test_stability_and_ablation():
     assert s["verdict"] == "FAIL" and s["worst_flip"] == 0.2
     assert stability_summary(results, 10, gate=0.3)["verdict"] == "PASS"
 
+def test_jev_judge_threshold():
+    import io, json as j, urllib.request
+    from signoff.core import jev_judge
+    import os
+    os.environ.setdefault("JEV_AI_API_KEY", "test-key-not-real")
+    canned = j.dumps({"answers": {"same": {"noul": 0.8}}}).encode()
+    class FakeResp(io.BytesIO):
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+    real = urllib.request.urlopen
+    urllib.request.urlopen = lambda req, timeout=0: FakeResp(canned)
+    try:
+        assert jev_judge(threshold=0.5)("a", "b") is True
+        assert jev_judge(threshold=0.9)("a", "b") is False
+    finally:
+        urllib.request.urlopen = real
+
 def test_stability_report_renders():
     from signoff.core import stability_suite, stability_summary
     from signoff.report import build_stability_html

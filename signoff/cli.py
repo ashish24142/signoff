@@ -17,7 +17,9 @@ def main(argv=None):
     r.add_argument("--model-b", required=True, help="candidate model, e.g. anthropic:claude-sonnet-4-5")
     r.add_argument("--runs", type=int, default=5)
     r.add_argument("--temperature", type=float, default=0.0)
-    r.add_argument("--judge", help="provider:model for the LLM-judge match layer")
+    r.add_argument("--judge", help="judge for the match layer: provider:model, or jev[:model]")
+    r.add_argument("--judge-threshold", type=float, default=0.5,
+                   help="jev judge only: minimum same-information probability to count a match")
     r.add_argument("--out", default="signoff-report.html")
 
     st = sub.add_parser("stability", help="N-run flakiness measurement for a single model")
@@ -49,7 +51,13 @@ def main(argv=None):
         print(f"verdict: {summary['verdict']}   report: {out} / {out.with_suffix('.json')}")
         return 1 if summary["verdict"] == "FAIL" else 0
 
-    judge = core.llm_judge(args.judge) if args.judge else None
+    if args.judge and (args.judge == "jev" or args.judge.startswith("jev:")):
+        jev_model = args.judge.partition(":")[2] or "jev-1.13.0"
+        judge = core.jev_judge(jev_model, threshold=args.judge_threshold)
+    elif args.judge:
+        judge = core.llm_judge(args.judge)
+    else:
+        judge = None
     results = core.run_suite(suite["cases"], args.model_a, args.model_b,
                              runs=args.runs, temperature=args.temperature, judge=judge)
     summary = core.summarize(results, args.runs)

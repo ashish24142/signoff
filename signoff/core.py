@@ -65,6 +65,29 @@ def matches(a: str, b: str, judge=None) -> tuple[bool, str]:
         return True, "judge"
     return False, "none"
 
+def jev_judge(model: str = "jev-1.13.0", threshold: float = 0.5):
+    """Judge via Jev's probability API (needs JEV_AI_API_KEY in the environment).
+
+    Returns judge(a, b) -> bool: True when the stated probability that A and B convey
+    the same information is >= threshold. Experimental: in our published CUAD test,
+    confidence-gating extraction QA with this signal underperformed (AUROC 0.723), so
+    treat the probability as a match decision, not an error detector. See
+    github.com/ashish24142/jev-clm for the data."""
+    import json as _json
+    import os as _os
+    import urllib.request as _rq
+
+    def judge(a: str, b: str) -> bool:
+        body = _json.dumps({"model": model, "state": f"Answer A:\n{a}\n\nAnswer B:\n{b}",
+                            "questions": {"same": {"type": "noul", "instructions":
+                                "Do Answer A and Answer B convey the same information?"}}})
+        req = _rq.Request("https://jev-ai.pro/api/v1/systemone", data=body.encode(),
+                          headers={"Authorization": "Bearer " + _os.environ["JEV_AI_API_KEY"],
+                                   "Content-Type": "application/json"})
+        with _rq.urlopen(req, timeout=60) as r:
+            return _json.load(r)["answers"]["same"]["noul"] >= threshold
+    return judge
+
 def llm_judge(spec: str):
     """Judge factory: returns judge(a, b) -> bool using the given provider:model."""
     def judge(a: str, b: str) -> bool:

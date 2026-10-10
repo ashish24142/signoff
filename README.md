@@ -49,6 +49,20 @@ cases:
 
 Single-run comparisons confuse nondeterminism with regression. A prompt that flips answers 30% of the time will "regress" or "improve" by luck. `signoff` reports the flip rate per case per model, so instability is visible before it's misattributed to the migration.
 
+## Judge options
+
+The semantic match layer accepts two judge kinds:
+
+```bash
+--judge openai:gpt-4o-mini                 # classic yes/no LLM judge
+--judge jev --judge-threshold 0.8          # probability judge (Jev API, JEV_AI_API_KEY)
+```
+
+The jev judge counts a match when the stated same-information probability clears the
+threshold. Caveat from our own published test (github.com/ashish24142/jev-clm): this
+signal is a reasonable match decision but a weak error detector, so do not use the
+probability to skip human QA of extractions.
+
 ## Prompt stability (flakiness) mode
 
 Measure a single model's flakiness, and find which prompt section causes it:
